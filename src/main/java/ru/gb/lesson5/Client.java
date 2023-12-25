@@ -24,6 +24,7 @@ public class Client {
     // запись
     new Thread(() -> {
       try (PrintWriter output = new PrintWriter(client.getOutputStream(), true)) {
+        output.println("client");
         Scanner consoleScanner = new Scanner(System.in);
         while (true) {
           String consoleInput = consoleScanner.nextLine();
@@ -40,5 +41,4 @@ public class Client {
 
   }
 }
-
 

@@ -31,6 +31,12 @@ public class Server {
         final long clientId = clientIdCounter++;
 
         SocketWrapper wrapper = new SocketWrapper(clientId, client);
+        Scanner inputAdmin = wrapper.getInput();
+        String adminInput = inputAdmin.nextLine();
+        if (adminInput.equals("admin")){
+          wrapper.appointmentAdministrator("admin");
+          System.out.println("Подключился админ" +wrapper);
+        }
         System.out.println("Подключился новый клиент[" + wrapper + "]");
         clients.put(clientId, wrapper);
 
@@ -46,12 +52,29 @@ public class Server {
                 clients.values().forEach(it -> it.getOutput().println("Клиент[" + clientId + "] отключился"));
                 break;
               }
+              if (Objects.equals("kick", clientInput.substring(0, 4))){
+                if (wrapper.isAdmin()){
+                  long kickId = Long.parseLong(clientInput.substring(5, 6));
+                  SocketWrapper destination = clients.get(kickId);
+                  destination.getSocket().close();
+                  clients.remove(kickId);
+                  clients.values().forEach(it -> it.getOutput().println("Клиент[" + kickId + "] кикнут"));
+                }
+              }
+              if(Objects.equals("@", clientInput.substring(0, 1))){
+                long destinationId = Long.parseLong(clientInput.substring(1, 2));
+                SocketWrapper destination = clients.get(destinationId);
+                destination.getOutput().println(clientInput);
+              }else {
+                clients.values().forEach(it -> it.getOutput().println(clientInput));
+              }
+
 
               // формат сообщения: "цифра сообщение"
-              long destinationId = Long.parseLong(clientInput.substring(0, 1));
-              SocketWrapper destination = clients.get(destinationId);
-              destination.getOutput().println(clientInput);
+
             }
+          } catch (IOException e) {
+            throw new RuntimeException(e);
           }
         }).start();
       }
@@ -67,12 +90,20 @@ class SocketWrapper implements AutoCloseable {
   private final Socket socket;
   private final Scanner input;
   private final PrintWriter output;
+  private boolean admin;
 
   SocketWrapper(long id, Socket socket) throws IOException {
     this.id = id;
     this.socket = socket;
     this.input = new Scanner(socket.getInputStream());
     this.output = new PrintWriter(socket.getOutputStream(), true);
+    this.admin = false;
+  }
+
+  public void appointmentAdministrator(String password){
+    if(password.equals("admin")){
+      this.admin = true;
+    }
   }
 
   @Override
